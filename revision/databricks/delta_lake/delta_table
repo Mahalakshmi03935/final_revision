@@ -1,0 +1,115 @@
+-- Databricks notebook source
+-- MAGIC %python
+-- MAGIC employee_data=[(100,'John','M',2000,'IT'), 
+-- MAGIC                (200,'Jane','F',3000,'HR'),
+-- MAGIC                (300,'Mary','F',1500, 'IT'),
+-- MAGIC                (400,'Bob','M',4000, 'SALES'),
+-- MAGIC                (500,'Alice','F',5000, 'IT')]
+-- MAGIC employee_schmea=['emp_id','emp_name', 'gender', 'salary', 'dept']
+-- MAGIC df=spark.createDataFrame(employee_data, employee_schmea)
+-- MAGIC df.display()
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC df.write.format('delta').saveAsTable('employee_table',mode='overwrite')
+
+-- COMMAND ----------
+
+DESCRIBE HISTORY employee_table
+
+-- COMMAND ----------
+
+select * from employee_table
+
+-- COMMAND ----------
+
+UPDATE employee_table
+SET emp_name = "maha"
+WHERE emp_name = "Bob"
+
+
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC
+-- MAGIC # Read the updated table
+-- MAGIC updated_df = spark.read.format("delta").table("employee_table")
+-- MAGIC updated_df.display()
+-- MAGIC
+
+-- COMMAND ----------
+
+desc history employee_table
+
+-- COMMAND ----------
+
+select * from employee_table version as of 9
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC # Schema Evolution: Add a new column 'age'
+-- MAGIC df_with_age = df.withColumn("age", col("salary") / 100)
+-- MAGIC df_with_age.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable("employee_table")
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC # Read the table with the new schema
+-- MAGIC new_schema_df = spark.read.format("delta").table("employee_table")
+-- MAGIC new_schema_df.display()
+-- MAGIC
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC # Data Versioning: List all versions of the table
+-- MAGIC from delta.tables import DeltaTable
+-- MAGIC
+-- MAGIC
+-- MAGIC versions = delta_table.history()
+-- MAGIC display(versions)
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC # Rollback: Restore to the first version
+-- MAGIC delta_table.restoreToVersion(0)
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC
+-- MAGIC # Read the restored table
+-- MAGIC restored_df = spark.read.format("delta").table("employee_table")
+-- MAGIC restored_df.display()
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC # Performance Optimization: Optimize the table
+-- MAGIC delta_table.optimize().executeCompaction()
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC
+-- MAGIC
+-- MAGIC # Z-Order by 'emp_id'
+-- MAGIC delta_table.optimize().executeZOrderBy("emp_id")
+-- MAGIC
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC # Clean up old versions of the data
+-- MAGIC delta_table.vacuum(retentionHours=168)
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC describe history employee_table
+
+-- COMMAND ----------
